@@ -1,0 +1,129 @@
+# ==================== 颐智康养 v0.4 — Docker 一键部署 ====================
+#
+# 启动命令：
+#   docker compose up -d
+#
+# 服务列表：
+#   db         — PostgreSQL 16 (端口 5432)
+#   backend    — FastAPI API (内网 8000)
+#   frontend   — React + Nginx (端口 80)
+#   prometheus — 指标采集 (端口 9090)
+#   grafana    — 可视化仪表盘 (端口 3000, 默认 admin/yzkang2024)
+#
+# 首次启动会自动：
+#   1. 创建 PostgreSQL 数据库
+#   2. 初始化所有表结构 + 种子数据
+#   3. 启动后端 API（4 workers）
+#   4. 启动前端 Nginx（代理 /api/ 到后端）
+#   5. Prometheus 自动采集后端 /metrics
+#   6. Grafana 预载 API 监控总览仪表盘
+
+services:
+  # ==================== PostgreSQL 数据库 ====================
+  db:
+    image: postgres:16-alpine
+    container_name: yzkang-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-yzkang}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-yzkang_dev_pwd}
+      POSTGRES_DB: ${DB_NAME:-yzkang_v2}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-yzkang} -d ${DB_NAME:-yzkang_v2}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==================== FastAPI 后端 ====================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: yzkang-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # 数据库
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-yzkang}
+      DB_PASSWORD: ${DB_PASSWORD:-yzkang_dev_pwd}
+      DB_NAME: ${DB_NAME:-yzkang_v2}
+      # 安全
+      SECRET_KEY: ${SECRET_KEY:-yzkang-docker-secret-change-me}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
+      # 限流
+      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS:-60}
+      RATE_LIMIT_WINDOW_SECONDS: ${RATE_LIMIT_WINDOW_SECONDS:-60}
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8000/api/health\")'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ==================== React 前端 + Nginx ====================
+  frontend:
+    build:
+      context: ./frontend-admin
+      dockerfile: Dockerfile
+    container_name: yzkang-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  # ==================== Prometheus 监控采集 ====================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: yzkang-prometheus
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"
+      - "--web.enable-lifecycle"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus-alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      - backend
+
+  # ==================== Grafana 可视化仪表盘 ====================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: yzkang-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-yzkang2024}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_INSTALL_PLUGINS: ""
+    volumes:
+      - ./grafana/datasources/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml:ro
+      - ./grafana/dashboards/dashboard.yml:/etc/grafana/provisioning/dashboards/dashboard.yml:ro
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+
+# ==================== 数据卷 ====================
+volumes:
+  pgdata:
+    name: yzkang_pgdata
+  prometheus_data:
+    name: yzkang_prometheus_data
+  grafana_data:
+    name: yzkang_grafana_data

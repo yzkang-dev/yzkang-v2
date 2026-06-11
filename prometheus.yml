@@ -1,0 +1,28 @@
+# ==================== Prometheus 配置 ====================
+# 颐智康养 V2 监控采集
+# 用途：抓取后端 API 指标、容器指标、数据库指标
+
+global:
+  scrape_interval: 15s      # 每15秒抓取一次
+  evaluation_interval: 15s  # 每15秒评估告警规则
+  scrape_timeout: 10s
+
+# 告警规则文件
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+# 抓取目标
+scrape_configs:
+  # 1. FastAPI 后端 — 应用级指标
+  - job_name: "yzkang-backend"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["backend:8000"]
+        labels:
+          service: "yzkang-api"
+          env: "production"
+
+  # 2. Prometheus 自身
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]

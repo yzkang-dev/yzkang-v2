@@ -1,0 +1,53 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+}
+
+/* 移动端大字体适配 */
+.ant-btn {
+  font-size: 16px;
+  height: auto;
+  padding: 8px 20px;
+}
+
+.ant-table {
+  font-size: 15px;
+}
+
+/* 院长看板卡片 */
+.dashboard-card {
+  text-align: center;
+  padding: 16px;
+  border-radius: 12px;
+}
+
+.dashboard-card .number {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1677ff;
+  line-height: 1.2;
+}
+
+.dashboard-card .label {
+  font-size: 14px;
+  color: #8c8c8c;
+  margin-top: 4px;
+}
+
+.dashboard-card.warning .number {
+  color: #fa8c16;
+}
+
+.dashboard-card.danger .number {
+  color: #ff4d4f;
+}
+
+.dashboard-card.success .number {
+  color: #52c41a;
+}

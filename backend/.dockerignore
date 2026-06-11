@@ -1,0 +1,14 @@
+# 后端 .dockerignore
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+tests/
+venv/
+env/
+.git
+.gitignore
+*.db
+*.sqlite3
+.env
+.env.local

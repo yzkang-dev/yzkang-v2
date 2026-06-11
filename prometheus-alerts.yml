@@ -1,0 +1,35 @@
+# ==================== Prometheus 告警规则 ====================
+# 颐智康养 V2
+
+groups:
+  - name: yzkang-api
+    rules:
+      # API 响应时间告警
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="yzkang-backend"}[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "API P95延迟超过2秒"
+          description: "{{ $labels.handler }} 接口P95延迟 {{ $value | humanizeDuration }}"
+
+      # 错误率告警
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{job="yzkang-backend", status=~"5.."}[5m]) / rate(http_requests_total{job="yzkang-backend"}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "API 5xx错误率超过5%"
+          description: "当前5xx错误率 {{ $value | humanizePercentage }}"
+
+      # 后端下线告警
+      - alert: BackendDown
+        expr: up{job="yzkang-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "后端服务不可用"
+          description: "{{ $labels.instance }} 后端已超过1分钟无响应"

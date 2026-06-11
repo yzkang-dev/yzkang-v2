@@ -1,0 +1,89 @@
+{
+  "name": "yizhi-desktop",
+  "version": "1.0.0",
+  "description": "颐智康养 - 智慧养老管理桌面客户端",
+  "author": "颐智康养",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux"
+  },
+  "devDependencies": {
+    "electron": "^28.1.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.yizhiyanglao.desktop",
+    "productName": "颐智康养",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+      "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}",
+      "!.editorconfig",
+      "!**/._*",
+      "!**/{.DS_Store,.git,.hg,.svn,.yardignore,.idea,.eclipse,.bowerrc,.tfignore,.gitkeep,.gitignore,.gitmodules,.project,.setting}",
+      "!**/npm-debug.log",
+      "!**/yarn.lock",
+      "!**/._*",
+      "!**/.gitignore"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "颐智康养"
+    },
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.business"
+    },
+    "linux": {
+      "target": "AppImage",
+      "category": "Office"
+    },
+    "extraResources": [
+      {
+        "from": "../backend",
+        "to": "backend",
+        "filter": [
+          "**/*",
+          "!venv",
+          "!venv/**/*",
+          "!__pycache__",
+          "!__pycache__/**/*",
+          "!*.pyc",
+          "!*.db"
+        ]
+      },
+      {
+        "from": "../frontend-admin/dist",
+        "to": "frontend"
+      },
+      {
+        "from": "./python-runtime/python",
+        "to": "python",
+        "filter": [
+          "**/*",
+          "!python-3.12.8-embed-amd64.zip",
+          "!*.tar.gz",
+          "!pip_src",
+          "!pip_src/**/*",
+          "!wheels",
+          "!wheels/**/*",
+          "!get-pip.py",
+          "!setuptools.whl"
+        ]
+      }
+    ]
+  }
+}

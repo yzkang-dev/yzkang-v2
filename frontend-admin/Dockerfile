@@ -2,13 +2,13 @@
 # 颐智康养 v0.3 — React 前端（多阶段构建）
 
 # ---- Stage 1: Build ----
-FROM node:22-alpine AS builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# 安装依赖
+# 安装依赖（使用淘宝npm镜像）
 COPY package.json package-lock.json* ./
-RUN npm ci --silent
+RUN npm ci --silent --registry=https://registry.npmmirror.com
 
 # 复制源码并构建
 COPY . .

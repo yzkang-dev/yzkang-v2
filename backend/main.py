@@ -156,6 +156,7 @@ from routers.users_admin import router as users_admin_router
 from routers.approvals import router as approvals_router
 from routers.contracts import router as contracts_router
 from routers.notification_config import router as notification_router
+from routers.notifications import router as notifications_router
 from routers.cameras import router as cameras_router
 from routers.audit_logs import router as audit_logs_router
 
@@ -175,6 +176,7 @@ app.include_router(users_admin_router)
 app.include_router(approvals_router)
 app.include_router(contracts_router)
 app.include_router(notification_router)
+app.include_router(notifications_router)
 app.include_router(cameras_router)
 app.include_router(audit_logs_router)
 

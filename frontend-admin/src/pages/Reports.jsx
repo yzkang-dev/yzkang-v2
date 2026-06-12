@@ -48,7 +48,7 @@ export default function Reports() {
 
   // 加载老人列表（用于筛选）
   useEffect(() => {
-    api.get('/elders/', { params: { page_size: 500 } }).then(res => {
+    api.get('/elders/', { params: { page_size: 100 } }).then(res => {
       setElders(res.data?.data || []);
     }).catch(() => {});
   }, []);

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api from '../api';
+import { setUser as sentrySetUser, clearUser as sentryClearUser } from '../utils/sentry';
 
 const AuthContext = createContext(null);
 
@@ -21,20 +22,18 @@ export function AuthProvider({ children }) {
 
   // 登录后调用，保存用户信息
   const setAuth = (data) => {
-    setUser({
+    const userData = {
       username: data.username,
       real_name: data.real_name,
       role: data.role,
       role_id: data.role_id,
-    });
+    };
+    setUser(userData);
     setPermissions(data.permissions || []);
-    localStorage.setItem('user', JSON.stringify({
-      username: data.username,
-      real_name: data.real_name,
-      role: data.role,
-      role_id: data.role_id,
-    }));
+    localStorage.setItem('user', JSON.stringify(userData));
     localStorage.setItem('permissions', JSON.stringify(data.permissions || []));
+    // Sentry 用户追踪
+    sentrySetUser({ id: data.role_id, username: data.username, role: data.role });
   };
 
   // 刷新当前用户信息（含权限）

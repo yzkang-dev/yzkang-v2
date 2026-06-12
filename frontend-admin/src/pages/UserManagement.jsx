@@ -25,12 +25,12 @@ export default function UserManagement() {
   const [pwdForm] = Form.useForm();
 
   const { data: users, loading, refetch } = useApi(
-    () => api.get('/users/'),
+    () => api.get('/admin/users/'),
     { defaultData: [], deps: [] }
   );
 
   const { data: roles } = useApi(
-    () => api.get('/users/roles/options'),
+    () => api.get('/admin/roles'),
     { defaultData: [], deps: [] }
   );
 
@@ -61,10 +61,10 @@ export default function UserManagement() {
   const onSubmit = async (values) => {
     try {
       if (editingUser) {
-        await api.put(`/users/${editingUser.id}`, values);
+        await api.put(`/admin/users/${editingUser.id}`, values);
         message.success('更新成功');
       } else {
-        await api.post('/users/', { ...values, password: values.password || '123456' });
+        await api.post('/admin/users/', { ...values, password: values.password || '123456' });
         message.success('创建成功');
       }
       setModalOpen(false);
@@ -76,7 +76,7 @@ export default function UserManagement() {
 
   const onDelete = async (id) => {
     try {
-      await api.delete(`/users/${id}`);
+      await api.delete(`/admin/users/${id}`);
       message.success('删除成功');
       refetch();
     } catch {
@@ -86,7 +86,7 @@ export default function UserManagement() {
 
   const onPwdSubmit = async (values) => {
     try {
-      await api.put(`/users/${pwdTarget.id}`, { password: values.password });
+      await api.put(`/admin/users/${pwdTarget.id}`, { password: values.password });
       message.success('密码重置成功');
       setPwdModalOpen(false);
     } catch {

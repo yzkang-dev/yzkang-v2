@@ -1,0 +1,65 @@
+# ==================== Promtail 配置 — 颐智康养日志收集到 Loki ====================
+#
+# 使用方式：
+#   docker compose -f docker-compose.yml -f docker-compose.logging.yml up -d
+#
+# 前置条件：
+#   Loki 已部署 (http://loki:3100)
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  # ── 后端应用日志 ──
+  - job_name: yzkang-backend
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: yzkang-backend
+          app: yzkang
+          __path__: /var/log/yzkang/app_*.json.gz
+    pipeline_stages:
+      - json:
+          expressions:
+            level: level
+            message: message
+            timestamp: timestamp
+      - labels:
+          level:
+      - timestamp:
+          source: timestamp
+          format: RFC3339
+
+  # ── Nginx 访问日志 ──
+  - job_name: yzkang-nginx
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: yzkang-nginx
+          app: yzkang
+          __path__: /var/log/nginx/access.log
+    pipeline_stages:
+      - regex:
+          expression: '^(?P<remote_addr>\S+) \S+ \S+ \[(?P<timestamp>[^\]]+)\] "(?P<method>\S+) (?P<request_uri>\S+) \S+" (?P<status>\d+) (?P<body_bytes_sent>\d+) "(?P<http_referer>[^"]*)" "(?P<http_user_agent>[^"]*)"(?: rt=(?P<request_time>\S+))?'
+      - timestamp:
+          source: timestamp
+          format: "02/Jan/2006:15:04:05 -0700"
+      - labels:
+          status:
+          method:
+
+  # ── 系统日志 (journald) ──
+  - job_name: journal
+    journal:
+      json: true
+      labels:
+        job: systemd-journal

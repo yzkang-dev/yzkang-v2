@@ -6,7 +6,7 @@ const url = require('url');
 
 const PORT = 5174;
 const DIST = path.join(__dirname, 'dist');
-const PROXY_TARGET = 'http://127.0.0.1:8000';
+const PROXY_TARGET = 'http://127.0.0.1:8899';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -21,7 +21,7 @@ const MIME = {
 
 // SPA fallback: serve index.html for non-file routes
 const SPA_ROUTES = ['/login', '/dashboard', '/elders', '/care-records', '/bills',
-  '/medications', '/shifts', '/vital-signs', '/alerts', '/reports', '/users', '/roles', '/approvals'];
+  '/medications', '/shifts', '/vital-signs', '/alerts', '/reports', '/users', '/roles', '/approvals', '/settings'];
 
 function serveFile(res, filePath) {
   const ext = path.extname(filePath).toLowerCase();

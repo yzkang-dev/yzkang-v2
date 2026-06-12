@@ -21,6 +21,7 @@ import {
   AuditOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../context/AuthContext';
+import { clearUser } from '../utils/sentry';
 
 const { Header, Sider, Content } = Layout;
 
@@ -78,6 +79,7 @@ export default function AppLayout() {
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
     localStorage.removeItem('permissions');
+    clearUser();
     navigate('/login');
   };
 

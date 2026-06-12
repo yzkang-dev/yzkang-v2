@@ -25,7 +25,7 @@ export function EldersProvider({ children }) {
     }
     setLoading(true);
     try {
-      const res = await api.get('/elders/', { params: { page_size: 500 } });
+      const res = await api.get('/elders/', { params: { page_size: 100 } });
       setElders(res.data);
       lastFetchRef.current = now;
     } catch {

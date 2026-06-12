@@ -60,7 +60,7 @@ class RateLimiter:
 
 
 # 全局限流器实例
-limiter = RateLimiter(max_requests=60, window_seconds=60)
+limiter = RateLimiter(max_requests=300, window_seconds=60)
 
 # 不需要限流的路径
 RATE_LIMIT_EXEMPT = {"/api/health", "/api/auth/refresh"}
@@ -81,6 +81,10 @@ async def rate_limit_middleware(request: Request, call_next):
         if request.client
         else "unknown"
     )
+
+    # 本地开发/回环地址跳过限流
+    if client_ip == "127.0.0.1" or client_ip.startswith("192.168.") or client_ip.startswith("10."):
+        return await call_next(request)
 
     allowed, remaining, reset_in = limiter.is_allowed(client_ip)
 

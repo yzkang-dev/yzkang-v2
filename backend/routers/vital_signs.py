@@ -32,6 +32,19 @@ def list_vital_signs(
     )
 
 
+@router.get("/", response_model=list[VitalSignsOut], summary="查询生命体征列表")
+def search_vital_signs(
+    elder_id: int | None = None,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """通用查询：可选按老人ID过滤，返回全部或指定老人的体征记录"""
+    q = db.query(VitalSigns)
+    if elder_id is not None:
+        q = q.filter(VitalSigns.elder_id == elder_id)
+    return q.order_by(VitalSigns.record_time.desc()).limit(200).all()
+
+
 @router.post("/", response_model=VitalSignsOut, summary="记录生命体征")
 def create_vital_sign(
     data: VitalSignsCreate,

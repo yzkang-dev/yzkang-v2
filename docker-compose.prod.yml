@@ -1,0 +1,170 @@
+# ==================== 颐智康养 v0.5 — 生产环境部署 ====================
+#
+# 使用方式：
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# 与开发版区别：
+#   - 使用 GHCR 预构建镜像（不从源码构建）
+#   - 资源限制（CPU/内存）
+#   - 非 root 用户运行
+#   - 日志上限（防止磁盘满）
+#   - 除 frontend 外不暴露端口到宿主机
+#   - 环境变量全部通过 .env 注入
+
+services:
+  # ==================== PostgreSQL 数据库 ====================
+  db:
+    image: postgres:16-alpine
+    container_name: yzkang-db
+    restart: unless-stopped
+    user: "999:999"  # postgres user
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - yzkang_pgdata:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  # ==================== FastAPI 后端 ====================
+  backend:
+    image: ghcr.io/${GITHUB_REPO:-your-org/yzkang}/yzkang-backend:latest
+    container_name: yzkang-backend
+    restart: unless-stopped
+    user: "1000:1000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      SECRET_KEY: ${SECRET_KEY}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS:-300}
+      RATE_LIMIT_WINDOW_SECONDS: ${RATE_LIMIT_WINDOW_SECONDS:-60}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-noreply@yzkang.com}
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8000/api/health\")'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+  # ==================== React 前端 + Nginx ====================
+  frontend:
+    image: ghcr.io/${GITHUB_REPO:-your-org/yzkang}/yzkang-frontend:latest
+    container_name: yzkang-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
+
+  # ==================== Prometheus 监控 ====================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: yzkang-prometheus
+    restart: unless-stopped
+    user: "65534:65534"  # nobody
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"
+      - "--web.enable-lifecycle"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus-alerts.yml:/etc/prometheus/alerts.yml:ro
+      - yzkang_prometheus_data:/prometheus
+    expose:
+      - "9090"
+    depends_on:
+      - backend
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ==================== Grafana 可视化 ====================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: yzkang-grafana
+    restart: unless-stopped
+    user: "472:472"  # grafana user
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:3000}
+    volumes:
+      - ./grafana/datasources/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml:ro
+      - ./grafana/dashboards/dashboard.yml:/etc/grafana/provisioning/dashboards/dashboard.yml:ro
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - yzkang_grafana_data:/var/lib/grafana
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    depends_on:
+      - prometheus
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# ==================== 数据卷 ====================
+volumes:
+  yzkang_pgdata:
+    name: yzkang_pgdata
+  yzkang_prometheus_data:
+    name: yzkang_prometheus_data
+  yzkang_grafana_data:
+    name: yzkang_grafana_data

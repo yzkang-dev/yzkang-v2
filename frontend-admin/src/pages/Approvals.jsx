@@ -62,7 +62,7 @@ export default function Approvals() {
   // 用户列表（懒加载）
   const [usersLoaded, setUsersLoaded] = useState(false);
   if (!usersLoaded) {
-    api.get('/users/').then(res => { setUsers(res.data); setUsersLoaded(true); });
+    api.get('/admin/users/').then(res => { setUsers(res.data); setUsersLoaded(true); });
   }
 
   const handleTabChange = (key) => {

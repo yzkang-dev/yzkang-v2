@@ -12,12 +12,12 @@ export default function RoleManagement() {
   const [form] = Form.useForm();
 
   const { data: roles, loading, refetch } = useApi(
-    () => api.get('/permissions/roles'),
+    () => api.get('/admin/roles'),
     { defaultData: [], deps: [] }
   );
 
   const { data: permissions } = useApi(
-    () => api.get('/permissions/list'),
+    () => api.get('/admin/permissions'),
     { defaultData: {}, deps: [], transform: (raw) => {
       const grouped = {};
       raw.forEach((p) => {
@@ -48,10 +48,10 @@ export default function RoleManagement() {
   const onSubmit = async (values) => {
     try {
       if (editingRole) {
-        await api.put(`/permissions/roles/${editingRole.id}`, values);
+        await api.put(`/admin/roles/${editingRole.id}`, values);
         message.success('更新成功');
       } else {
-        await api.post('/permissions/roles', values);
+        await api.post('/admin/roles', values);
         message.success('创建成功');
       }
       setModalOpen(false);
@@ -63,7 +63,7 @@ export default function RoleManagement() {
 
   const onDelete = async (id) => {
     try {
-      await api.delete(`/permissions/roles/${id}`);
+      await api.delete(`/admin/roles/${id}`);
       message.success('删除成功');
       refetch();
     } catch {

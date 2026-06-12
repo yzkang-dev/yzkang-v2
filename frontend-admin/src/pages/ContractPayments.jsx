@@ -217,7 +217,7 @@ export default function ContractPayments() {
 
   const fetchContracts = useCallback(() => {
     setLoading(true);
-    const params = { page_size: 200 };
+    const params = { page_size: 100 };
     if (filterElderId) params.elder_id = filterElderId;
     if (filterStatus) params.status = filterStatus;
     api.get('/contracts/', { params })
